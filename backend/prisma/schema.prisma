@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id_usuario      String    @id @default(uuid())
+  nombre          String
+  apellido        String
+  email           String    @unique
+  telefono        String?   
+  password        String
+  fecha_nacimiento DateTime? @db.Date
+  role            Int       @default(1) // 1: CLIENTE, 2: ADMIN
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  reservas        Reserva[]
+
+  @@map("usuario")
+}
+
+model Espacio {
+  id_espacio           String             @id @default(uuid())
+  nombre               String
+  descripcion          String?
+  capacidad            Int
+  precio_por_hora      Float              @map("precio_por_hora")
+  precio_por_dia       Float              @map("precio_por_dia")
+  precio_fin_de_semana Float              @default(1.25) @map("precio_fin_de_semana") // Multiplicador fines de semana
+  precio_nocturno      Float              @default(1.15) @map("precio_nocturno")     // Multiplicador horario nocturno
+  estado               Int                @default(1) // 1: ACTIVO, 2: INACTIVO/MANTENIMIENTO
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  imagenes             Imagen[]
+  reservas             Reserva[]
+  espacioFacilidades   EspacioFacilidad[]
+
+  @@map("espacios")
+}
+
+model Facilidad {
+  id_facilidad       String             @id @default(uuid())
+  nombre             String             @unique
+  icon               String?
+  espacioFacilidades EspacioFacilidad[]
+
+  @@map("facilidades")
+}
+
+model EspacioFacilidad {
+  id_espacio   String    @map("id_espacio")
+  id_facilidad String    @map("id_facilidad")
+  espacio      Espacio   @relation(fields: [id_espacio], references: [id_espacio], onDelete: Cascade)
+  facilidad    Facilidad @relation(fields: [id_facilidad], references: [id_facilidad], onDelete: Cascade)
+
+  @@id([id_espacio, id_facilidad])
+  @@map("espacio_facilidad")
+}
+
+model Imagen {
+  id_imagen  String   @id @default(uuid())
+  id_espacio String   @map("id_espacio")
+  url        String
+  espacio    Espacio  @relation(fields: [id_espacio], references: [id_espacio], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("imagenes")
+}
+
+model Reserva {
+  id_reserva   String   @id @default(uuid())
+  id_usuario   String   @map("id_usuario") 
+  id_espacio   String   @map("id_espacio") 
+  fecha_inicio DateTime @map("start_time")
+  fecha_fin    DateTime @map("end_time")
+  precio_total Float    @map("precio_total")
+  estado       Int      @default(1) // 1: PENDING, 2: CONFIRMED, 3: CANCELLED
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+  espacio Espacio @relation(fields: [id_espacio], references: [id_espacio], onDelete: Cascade)
+
+  // Índices para optimizar búsquedas de disponibilidad temporal
+  @@index([id_espacio, fecha_inicio, fecha_fin])
+  @@index([fecha_inicio, fecha_fin])
+  @@map("reservas")
+}
