@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { listarEspacios } from '../services/espacios.service';
 
 export default function SpaceCatalog() {
@@ -166,6 +167,13 @@ export default function SpaceCatalog() {
                                                     )}
                                                 </div>
                                             )}
+
+                                            <Link
+    to={`/espacios/${espacio.id_espacio}`}
+    className="space-reserve-button"
+>
+    Ver detalles y reservar →
+</Link>
 
                                     </div>
 
